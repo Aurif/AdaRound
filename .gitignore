@@ -2,6 +2,7 @@ input/
 src/aimet/
 src/Examples/
 output_*/
+output/
 
 
 # Byte-compiled / optimized / DLL files
