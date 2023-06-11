@@ -1,4 +1,4 @@
-# v0.8
+# v0.9
 
 from inspect import signature as _signature
 import types as _types
@@ -40,6 +40,8 @@ def getall(obj):
     return {k: getattr(obj, k) for k in dir(obj)}
 
 class ParamsBase:
+    iteration = 0
+
     def __init__(self, **kwargs):
         default_values = self._get_default_values()
         for k, v in default_values.items():
@@ -55,12 +57,11 @@ class ParamsBase:
             setattr(self, k, v)
         self._diff = kwargs
 
-    def clone(self):
+    def clone(self, extra=None):
         generators = self._get_generators()
-        clean_values = {
-            k: v for k, v in self._get_values().items() 
-            if k not in generators or k in self._diff
-        }
+        clean_values = {**{
+            k: v for k, v in self._diff.items()
+        }, **(extra or {})}
         return self.__class__(**clean_values)
 
     def __repr__(self):
@@ -160,8 +161,9 @@ class AsExperiment:
     def iterate_experiments(self, scope):
         for params in self.grid:
             for i in range(self.repetitions):
-                scope.activate(params.clone())
-                yield {'iteration': i, **params._diff}
+                params_clone = params.clone({'iteration': i})
+                scope.activate(params_clone)
+                yield params_clone._diff
                 scope.deactivate()
     
     def check_if_present(self, results, keys):
@@ -200,6 +202,7 @@ class _ExperimentScope:
         self.param = self.default()
 
     def get(self, name):
+        print(self.param)
         if not hasattr(self.param, name):
             raise Exception(f"Trying to bind parameter {name} that is not defined in settings")
         return getattr(self.param, name)
